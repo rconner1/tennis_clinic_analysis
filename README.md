@@ -15,9 +15,7 @@ These results describe an association and do not establish that clinics cause hi
 ## Files
 
 - `HH_project.Rmd`: R Markdown source code for data cleaning, modeling, tables, and figures.
-- `HH_project.html`: knitted project report.
-- `figures/`: figures used in the report.
-- `outputs/`: exported analytical outputs, if included.
+- `HH_project.pdf`:project report.
 
 ## Methods
 
