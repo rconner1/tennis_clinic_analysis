@@ -1,0 +1,1393 @@
+---
+title: "HH_project"
+author: "Riley Conner"
+date: "2026-08-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(readxl)
+library(dplyr)
+library(purrr)
+library(janitor)
+library(stringr)
+library(lubridate)
+library(tidyr)
+```
+
+
+```{r}
+read_pool_year <- function(file_name) {
+  
+  month_tabs <- excel_sheets(file_name)
+  
+  map_dfr(month_tabs, function(tab) {
+    
+    read_excel(
+      file_name,
+      sheet = tab,
+      col_types = "text"
+    ) |>
+      select(Date, Members, `Inn Guests`, Total) |>
+      mutate(
+        month_tab = tab,
+        date = as.Date(as.numeric(Date), origin = "1899-12-30"),
+        members = as.numeric(Members),
+        inn_guests = as.numeric(`Inn Guests`),
+        total = as.numeric(Total),
+        year = as.numeric(str_extract(file_name, "20\\d{2}"))
+      ) |>
+      select(date, members, inn_guests, total, month_tab, year)
+  })
+}
+```
+
+```{r}
+pool_2023 <- read_pool_year("pool_2023.xlsx")
+pool_2024 <- read_pool_year("pool_2024.xlsx")
+pool_2025 <- read_pool_year("pool_2025.xlsx")
+pool_2026 <- read_pool_year("pool_2026.xlsx")
+```
+
+
+```{r}
+read_tennis_summer_2025 <- function(file_name) {
+  
+  summer_tabs <- c("June", "July", "August")
+  
+  map_dfr(summer_tabs, function(tab) {
+    
+    read_excel(
+      file_name,
+      sheet = tab,
+      col_types = "text"
+    ) |>
+      select(
+        Date,
+        `Total Tennis Players`,
+        `Member Court Bookings...3`,
+        `Inn Guest Court Bookings`,
+        `Member in clinics...5`,
+        `Inn Guests in clinics...6`,
+        `Member Lessons...7`,
+        `Inn Guest Lessons`,
+        `Total PB Players`,
+        `Open Play`,
+        `Member Court Bookings...11`,
+        `Inn Guests CourtBookings`,
+        `Member in clinics...13`,
+        `Inn Guests in clinics...14`,
+        `Member Lessons...15`,
+        `Inn Guests Lessons`
+      ) |>
+      rename(
+        date = Date,
+        
+        tennis_total = `Total Tennis Players`,
+        tennis_member_bookings = `Member Court Bookings...3`,
+        tennis_guest_bookings = `Inn Guest Court Bookings`,
+        tennis_member_clinics = `Member in clinics...5`,
+        tennis_guest_clinics = `Inn Guests in clinics...6`,
+        tennis_member_lessons = `Member Lessons...7`,
+        tennis_guest_lessons = `Inn Guest Lessons`,
+        
+        pickleball_total = `Total PB Players`,
+        pickleball_open_play = `Open Play`,
+        pickleball_member_bookings = `Member Court Bookings...11`,
+        pickleball_guest_bookings = `Inn Guests CourtBookings`,
+        pickleball_member_clinics = `Member in clinics...13`,
+        pickleball_guest_clinics = `Inn Guests in clinics...14`,
+        pickleball_member_lessons = `Member Lessons...15`,
+        pickleball_guest_lessons = `Inn Guests Lessons`
+      ) |>
+      mutate(
+        date = as.Date(as.numeric(date), origin = "1899-12-30"),
+        month_tab = tab,
+        year = as.numeric(str_extract(file_name, "20\\d{2}")),
+        
+        across(
+          -c(date, month_tab, year),
+          as.numeric
+        )
+      )
+  })
+}
+
+
+```
+
+```{r}
+read_tennis_summer_2023 <- function(file_name) {
+  
+  summer_tabs <- c("June", "July", "August")
+  
+  map_dfr(summer_tabs, function(tab) {
+    
+    skip_rows <- case_when(
+      tab == "June" ~ 2,
+      tab == "July" ~ 2,
+      tab == "August" ~ 2
+    )
+    
+    read_excel(
+      file_name,
+      sheet = tab,
+      skip = 1,  
+      col_types = "text"
+    ) |>
+      select(
+        Date,
+        `Total Tennis Players`,
+        `Members Court Bookings...3`,
+        `Inn Guests Court Bookings`,
+        `Member in clinics...5`,
+        `Inn Guests in clinics...6`,
+        `Member Lessons...7`,
+        `Inn Guests Lessons...8`,
+        `Total PB Players`,
+        `Open Play`,
+        `Members Court Bookings...11`,
+        `Inn GuestsCourt Bookings`,
+        `Member in clinics...13`,
+        `Inn Guests in clinics...14`,
+        `Member Lessons...15`,
+        `Inn Guests Lessons...16`
+      ) |>
+      rename(
+        date = Date,
+        
+        tennis_total = `Total Tennis Players`,
+        tennis_member_bookings = `Members Court Bookings...3`,
+        tennis_guest_bookings = `Inn Guests Court Bookings`,
+        tennis_member_clinics = `Member in clinics...5`,
+        tennis_guest_clinics = `Inn Guests in clinics...6`,
+        tennis_member_lessons = `Member Lessons...7`,
+        tennis_guest_lessons = `Inn Guests Lessons...8`,
+        
+        pickleball_total = `Total PB Players`,
+        pickleball_open_play = `Open Play`,
+        pickleball_member_bookings = `Members Court Bookings...11`,
+        pickleball_guest_bookings = `Inn GuestsCourt Bookings`,
+        pickleball_member_clinics = `Member in clinics...13`,
+        pickleball_guest_clinics = `Inn Guests in clinics...14`,
+        pickleball_member_lessons = `Member Lessons...15`,
+        pickleball_guest_lessons = `Inn Guests Lessons...16`
+      ) |>
+      mutate(
+        date = as.Date(as.numeric(date), origin = "1899-12-30"),
+        month_tab = tab,
+        year = as.numeric(str_extract(file_name, "20\\d{2}")),
+        
+        across(
+          -c(date, month_tab, year),
+          as.numeric
+        )
+      )
+  })
+}
+```
+
+```{r}
+read_tennis_summer_2024 <- function(file_name) {
+  
+  summer_tabs <- c("June", "July", "August")
+  
+  map_dfr(summer_tabs, function(tab) {
+    
+    skip_rows <- case_when(
+      tab == "June" ~ 0,
+      tab == "July" ~ 0,
+      tab == "August" ~ 0
+    )
+    
+    read_excel(
+      file_name,
+      sheet = tab,
+      skip = 0,  
+      col_types = "text"
+    ) |>
+      select(
+        Date,
+        `Total Tennis Players`,
+        `Members Court Bookings...3`,
+        `Inn Guests Court Bookings`,
+        `Member in clinics...5`,
+        `Inn Guests in clinics...6`,
+        `Member Lessons...7`,
+        `Inn Guests Lessons...8`,
+        `Total PB Players`,
+        `Open Play`,
+        `Members Court Bookings...11`,
+        `Inn GuestsCourt Bookings`,
+        `Member in clinics...13`,
+        `Inn Guests in clinics...14`,
+        `Member Lessons...15`,
+        `Inn Guests Lessons...16`
+      ) |>
+      rename(
+        date = Date,
+        
+        tennis_total = `Total Tennis Players`,
+        tennis_member_bookings = `Members Court Bookings...3`,
+        tennis_guest_bookings = `Inn Guests Court Bookings`,
+        tennis_member_clinics = `Member in clinics...5`,
+        tennis_guest_clinics = `Inn Guests in clinics...6`,
+        tennis_member_lessons = `Member Lessons...7`,
+        tennis_guest_lessons = `Inn Guests Lessons...8`,
+        
+        pickleball_total = `Total PB Players`,
+        pickleball_open_play = `Open Play`,
+        pickleball_member_bookings = `Members Court Bookings...11`,
+        pickleball_guest_bookings = `Inn GuestsCourt Bookings`,
+        pickleball_member_clinics = `Member in clinics...13`,
+        pickleball_guest_clinics = `Inn Guests in clinics...14`,
+        pickleball_member_lessons = `Member Lessons...15`,
+        pickleball_guest_lessons = `Inn Guests Lessons...16`
+      ) |>
+      mutate(
+        date = as.Date(as.numeric(date), origin = "1899-12-30"),
+        month_tab = tab,
+        year = as.numeric(str_extract(file_name, "20\\d{2}")),
+        
+        across(
+          -c(date, month_tab, year),
+          as.numeric
+        )
+      )
+  })
+}
+```
+
+```{r}
+read_tennis_summer_2026 <- function(file_name) {
+  
+  summer_tabs <- c("June", "July", "August")
+  
+  map_dfr(summer_tabs, function(tab) {
+    
+    skip_rows <- case_when(
+      tab == "June" ~ 0,
+      tab == "July" ~ 0,
+      tab == "August" ~ 0
+    )
+    
+    read_excel(
+      file_name,
+      sheet = tab,
+      skip = 0,  
+      col_types = "text"
+    ) |>
+      select(
+        Date,
+        `Total Tennis Players`,
+        `Member Court Bookings...3`,
+        `Inn Guest Court Bookings`,
+        `Member in clinics...5`,
+        `Inn Guests in clinics...6`,
+        `Member Lessons...7`,
+        `Inn Guest Lessons`,
+        `Total PB Players`,
+        `Open Play`,
+        `Member Court Bookings...11`,
+        `Inn Guest Court Bookings`,
+        `Member in clinics...13`,
+        `Inn Guests in clinics...14`,
+        `Member Lessons...15`,
+        `Inn Guests Lessons`
+      ) |>
+      rename(
+        date = Date,
+        
+        tennis_total = `Total Tennis Players`,
+        tennis_member_bookings = `Member Court Bookings...3`,
+        tennis_guest_bookings = `Inn Guest Court Bookings`,
+        tennis_member_clinics = `Member in clinics...5`,
+        tennis_guest_clinics = `Inn Guests in clinics...6`,
+        tennis_member_lessons = `Member Lessons...7`,
+        tennis_guest_lessons = `Inn Guest Lessons`,
+        
+        pickleball_total = `Total PB Players`,
+        pickleball_open_play = `Open Play`,
+        pickleball_member_bookings = `Member Court Bookings...11`,
+        pickleball_guest_bookings = `Inn Guest Court Bookings`,
+        pickleball_member_clinics = `Member in clinics...13`,
+        pickleball_guest_clinics = `Inn Guests in clinics...14`,
+        pickleball_member_lessons = `Member Lessons...15`,
+        pickleball_guest_lessons = `Inn Guests Lessons`
+      ) |>
+      mutate(
+        date = as.Date(as.numeric(date), origin = "1899-12-30"),
+        month_tab = tab,
+        year = as.numeric(str_extract(file_name, "20\\d{2}")),
+        
+        across(
+          -c(date, month_tab, year),
+          as.numeric
+        )
+      )
+  })
+}
+```
+
+```{r}
+tennis_2023 <- read_tennis_summer_2023("tennis_2023.xlsx")
+tennis_2024 <- read_tennis_summer_2024("tennis_2024.xlsx")
+tennis_2025 <- read_tennis_summer_2025("tennis_2025.xlsx")
+tennis_2026 <- read_tennis_summer_2026("tennis_2026.xlsx")
+```
+
+```{r}
+read_fitness_summer <- function(file_name) {
+  
+  summer_tabs <- c("June", "July", "August")
+  
+  map_dfr(summer_tabs, function(tab) {
+    
+    read_excel(
+      file_name,
+      sheet = tab,
+      col_names = FALSE,
+      col_types = "text"
+    ) |>
+      slice(-1) |>
+      select(1:6) |>
+      setNames(c(
+        "date",
+        "walkin_members",
+        "walkin_inn_guests",
+        "pt_members",
+        "pt_inn_guests",
+        "unused_total"
+      )) |>
+      mutate(
+        date = as.Date(as.numeric(date), origin = "1899-12-30"),
+        
+        walkin_members = as.numeric(walkin_members),
+        walkin_inn_guests = as.numeric(walkin_inn_guests),
+        pt_members = as.numeric(pt_members),
+        pt_inn_guests = as.numeric(pt_inn_guests),
+        
+        walkins_total = walkin_members + walkin_inn_guests,
+        pt_total = pt_members + pt_inn_guests,
+        
+        month_tab = tab,
+        year = as.numeric(str_extract(file_name, "20\\d{2}"))
+      ) |>
+      select(
+        date,
+        walkin_members,
+        walkin_inn_guests,
+        walkins_total,
+        pt_members,
+        pt_inn_guests,
+        pt_total,
+        month_tab,
+        year
+      ) |>
+      filter(!is.na(date))
+  })
+}
+```
+
+
+```{r}
+fitness_2025 <- read_fitness_summer("fitness_2025.xlsx")
+fitness_2023 <- read_fitness_summer("fitness_2023.xlsx")
+fitness_2024 <- read_fitness_summer("fitness_2024.xlsx")
+fitness_2026 <- read_fitness_summer("fitness_2026.xlsx")
+```
+
+```{r}
+pool_all <- bind_rows(
+  pool_2023,
+  pool_2024,
+  pool_2025,
+  pool_2026
+)
+```
+
+```{r}
+tennis_all <- bind_rows(
+  tennis_2023,
+  tennis_2024,
+  tennis_2025,
+  tennis_2026
+)
+```
+
+```{r}
+fitness_all <- bind_rows(
+  fitness_2023,
+  fitness_2024,
+  fitness_2025,
+  fitness_2026
+)
+```
+
+```{r}
+tennis_all <- tennis_all |>
+  mutate(
+    across(
+      c(
+        tennis_total,
+        tennis_member_bookings,
+        tennis_guest_bookings,
+        tennis_member_clinics,
+        tennis_guest_clinics,
+        tennis_member_lessons,
+        tennis_guest_lessons,
+        pickleball_total,
+        pickleball_open_play,
+        pickleball_member_bookings,
+        pickleball_guest_bookings,
+        pickleball_member_clinics,
+        pickleball_guest_clinics,
+        pickleball_member_lessons,
+        pickleball_guest_lessons
+      ),
+      ~ replace_na(.x, 0)
+    )
+  )
+
+pool_all <- pool_all |>
+  mutate(
+    across(
+      c(members, inn_guests, total),
+      ~ replace_na(.x, 0)
+    )
+  )
+
+fitness_all <- fitness_all |>
+  mutate(
+    across(
+      c(
+        walkin_members,
+        walkin_inn_guests,
+        walkins_total,
+        pt_members,
+        pt_inn_guests,
+        pt_total
+      ),
+      ~ replace_na(.x, 0)
+    )
+  )
+fitness_all <- fitness_all |>
+  mutate(
+    fitness_total = walkins_total + pt_total
+  )
+```
+
+```{r}
+tennis_all <- tennis_all |>
+  filter(!is.na(date))
+tennis_all <- tennis_all |>
+  mutate(
+    
+    tennis_bookings =
+      tennis_member_bookings + tennis_guest_bookings,
+    
+    tennis_clinics =
+      tennis_member_clinics + tennis_guest_clinics,
+    
+    tennis_lessons =
+      tennis_member_lessons + tennis_guest_lessons,
+    
+    pickleball_bookings =
+      pickleball_member_bookings + pickleball_guest_bookings,
+    
+    pickleball_clinics =
+      pickleball_member_clinics + pickleball_guest_clinics,
+    
+    pickleball_lessons =
+      pickleball_member_lessons + pickleball_guest_lessons
+  )
+```
+
+```{r}
+library(lubridate)
+
+tennis_all <- tennis_all |>
+  mutate(
+    weekday = wday(date, label = TRUE, week_start = 1),
+    weekend = if_else(
+      weekday %in% c("Sat", "Sun"),
+      "Weekend",
+      "Weekday"
+    ),
+    month = month(date, label = TRUE, abbr = FALSE)
+  )
+```
+
+```{r}
+tennis_all <- tennis_all |>
+  mutate(
+    
+    tennis_booking_share = if_else(
+      tennis_total > 0,
+      tennis_bookings / tennis_total,
+      NA_real_
+    ),
+    
+    tennis_clinic_share = if_else(
+      tennis_total > 0,
+      tennis_clinics / tennis_total,
+      NA_real_
+    ),
+    
+    tennis_lesson_share = if_else(
+      tennis_total > 0,
+      tennis_lessons / tennis_total,
+      NA_real_
+    ),
+    
+    pickleball_booking_share = if_else(
+      pickleball_total > 0,
+      pickleball_bookings / pickleball_total,
+      NA_real_
+    ),
+    
+    pickleball_clinic_share = if_else(
+      pickleball_total > 0,
+      pickleball_clinics / pickleball_total,
+      NA_real_
+    ),
+    
+    pickleball_lesson_share = if_else(
+      pickleball_total > 0,
+      pickleball_lessons / pickleball_total,
+      NA_real_
+    ),
+    
+    pickleball_open_play_share = if_else(
+      pickleball_total > 0,
+      pickleball_open_play / pickleball_total,
+      NA_real_
+    )
+  )
+```
+
+```{r}
+#quality checks to make sure its right
+tennis_all <- tennis_all |>
+  mutate(
+    
+    tennis_components =
+      tennis_bookings + tennis_clinics + tennis_lessons,
+    
+    pickleball_components =
+      pickleball_open_play +
+      pickleball_bookings +
+      pickleball_clinics +
+      pickleball_lessons,
+    
+    tennis_difference =
+      tennis_total - tennis_components,
+    
+    pickleball_difference =
+      pickleball_total - pickleball_components
+  )
+tennis_all <- tennis_all |>
+  filter(
+    !(year == 2026 & date > as.Date("2026-08-14"))
+  )
+```
+
+
+Question 1:
+How much member/guest court booking demand do tennis clinics displace, and does clinic scheduling represent an efficient trade-off between programming revenue and member access to courts?
+
+```{r}
+# Basic clinic-day counts
+tennis_all <- tennis_all |>
+  mutate(
+    clinic_day = if_else(tennis_clinics > 0, "Clinic day", "No clinic")
+  )
+
+table(tennis_all$clinic_day)
+
+# Same breakdown by year, in case clinic frequency changed over time
+table(tennis_all$year, tennis_all$clinic_day)
+
+# Distribution of clinic participant counts (to see "low" vs "high" clinic days)
+summary(tennis_all$tennis_clinics)
+
+tennis_all |>
+  filter(tennis_clinics > 0) |>
+  pull(tennis_clinics) |>
+  summary()
+
+# Histogram of clinic sizes on clinic days
+library(ggplot2)
+ggplot(tennis_all |> filter(tennis_clinics > 0), aes(x = tennis_clinics)) +
+  geom_histogram(binwidth = 1, fill = "#1F5A94") +
+  labs(
+    title = "Distribution of Tennis Clinic Sizes on Clinic Days",
+    x = "Clinic participants",
+    y = "Number of days"
+  ) +
+  theme_minimal()
+
+# Weekday pattern of clinic days (are clinics always the same day of week?)
+tennis_all |>
+  count(weekday, clinic_day) |>
+  ggplot(aes(x = weekday, y = n, fill = clinic_day)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Clinic Days vs Non-Clinic Days by Weekday",
+    x = "Weekday", y = "Number of days", fill = NULL
+  ) +
+  theme_minimal()
+
+# Bookings comparison: clinic day vs non-clinic day (a first raw look, before modeling)
+tennis_all |>
+  group_by(clinic_day) |>
+  summarise(
+    n_days = n(),
+    avg_bookings = mean(tennis_bookings),
+    median_bookings = median(tennis_bookings),
+    sd_bookings = sd(tennis_bookings)
+  )
+```
+
+```{r}
+library(MASS)  # for glm.nb
+
+tennis_model <- glm.nb(
+  tennis_bookings ~ tennis_clinics + weekday + year + weekend,
+  data = tennis_all
+)
+
+summary(tennis_model)
+
+# Exponentiate coefficients for interpretable "rate ratios"
+exp(coef(tennis_model))
+exp(confint(tennis_model))
+```
+```{r}
+tennis_all <- tennis_all |>
+  mutate(year_centered = year - min(year))  # 2023 becomes 0, 2026 becomes 3
+
+tennis_model <- glm.nb(
+  tennis_bookings ~ tennis_clinics + weekday + year_centered,
+  data = tennis_all
+)
+summary(tennis_model)
+exp(coef(tennis_model))
+```
+
+```{r}
+tennis_model2 <- glm.nb(
+  tennis_bookings ~ tennis_clinics + weekday + factor(year),
+  data = tennis_all
+)
+```
+
+```{r}
+tennis_analysis <- tennis_all |>
+  filter(!is.na(date)) |>
+  mutate(
+    year = factor(year),
+    month = factor(month, levels = c("June", "July", "August")),
+    weekday = factor(weekday),
+    clinic_day = factor(clinic_day, levels = c("No clinic", "Clinic day"))
+  )
+
+tennis_analysis |>
+  summarise(
+    days = n(),
+    first_date = min(date),
+    last_date = max(date),
+    total_bookings = sum(tennis_bookings),
+    total_clinic_participants = sum(tennis_clinics),
+    clinic_days = sum(tennis_clinics > 0),
+    no_clinic_days = sum(tennis_clinics == 0),
+    pct_clinic_days = mean(tennis_clinics > 0) * 100,
+    booking_mean = mean(tennis_bookings),
+    booking_sd = sd(tennis_bookings),
+    clinic_mean = mean(tennis_clinics),
+    clinic_median = median(tennis_clinics),
+    clinic_max = max(tennis_clinics)
+  )
+```
+
+```{r}
+tennis_analysis |>
+  summarise(
+    n_days = n(),
+    tennis_nonzero_difference = sum(tennis_difference != 0, na.rm = TRUE),
+    tennis_max_abs_difference = max(abs(tennis_difference), na.rm = TRUE),
+    pickleball_nonzero_difference = sum(pickleball_difference != 0, na.rm = TRUE),
+    pickleball_max_abs_difference = max(abs(pickleball_difference), na.rm = TRUE)
+  )
+```
+
+```{r}
+table_1 <- tennis_analysis |>
+  group_by(clinic_day) |>
+  summarise(
+    n_days = n(),
+    mean_bookings = mean(tennis_bookings),
+    median_bookings = median(tennis_bookings),
+    sd_bookings = sd(tennis_bookings),
+    mean_clinic_participants = mean(tennis_clinics),
+    median_clinic_participants = median(tennis_clinics),
+    mean_tennis_players = mean(tennis_total),
+    .groups = "drop"
+  )
+
+table_1
+```
+
+```{r}
+tennis_analysis |>
+  group_by(year) |>
+  summarise(
+    days = n(),
+    clinic_days = sum(tennis_clinics > 0),
+    pct_clinic_days = 100 * mean(tennis_clinics > 0),
+    mean_clinic_size = mean(tennis_clinics[tennis_clinics > 0]),
+    mean_bookings = mean(tennis_bookings),
+    total_bookings = sum(tennis_bookings),
+    .groups = "drop"
+  )
+```
+
+```{r}
+library(MASS)
+
+model_main <- glm.nb(
+  tennis_bookings ~ tennis_clinics + weekday + month + factor(year),
+  data = tennis_analysis
+)
+
+summary(model_main)
+```
+
+```{r}
+tennis_analysis <- tennis_analysis |>
+  mutate(
+    clinic_size_group = case_when(
+      tennis_clinics == 0 ~ "No clinic",
+      tennis_clinics <= 5 ~ "1–5 participants",
+      tennis_clinics <= 10 ~ "6–10 participants",
+      tennis_clinics <= 15 ~ "11–15 participants",
+      TRUE ~ "16+ participants"
+    ),
+    clinic_size_group = factor(
+      clinic_size_group,
+      levels = c(
+        "No clinic",
+        "1–5 participants",
+        "6–10 participants",
+        "11–15 participants",
+        "16+ participants"
+      )
+    )
+  )
+
+model_categories <- glm.nb(
+  tennis_bookings ~ clinic_size_group + weekday + month + factor(year),
+  data = tennis_analysis
+)
+
+summary(model_categories)
+exp(cbind(
+  rate_ratio = coef(model_categories),
+  confint(model_categories)
+))
+```
+```{r}
+100 * (exp(coef(model_main)["tennis_clinics"]) - 1)
+```
+
+```{r}
+tennis_analysis <- tennis_analysis |>
+  mutate(
+    weekday = factor(
+      as.character(weekday),
+      levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    ),
+    month = factor(
+      as.character(month),
+      levels = c("June", "July", "August")
+    ),
+    year = factor(year)
+  )
+```
+
+```{r}
+tennis_analysis <- tennis_analysis |>
+  mutate(
+    weekday = relevel(weekday, ref = "Mon"),
+    month = relevel(month, ref = "June"),
+    year = relevel(year, ref = "2023")
+  )
+```
+
+```{r}
+library(MASS)
+
+model_main <- glm.nb(
+  tennis_bookings ~ tennis_clinics + weekday + month + year,
+  data = tennis_analysis
+)
+
+model_categories <- glm.nb(
+  tennis_bookings ~ clinic_size_group + weekday + month + year,
+  data = tennis_analysis
+)
+
+summary(model_main)
+summary(model_categories)
+
+exp(cbind(
+  rate_ratio = coef(model_categories),
+  confint(model_categories)
+))
+```
+
+```{r}
+tennis_analysis <- tennis_analysis |>
+  mutate(
+    clinic_size_group_3 = case_when(
+      tennis_clinics == 0 ~ "No clinic",
+      tennis_clinics <= 5 ~ "1–5 participants",
+      tennis_clinics <= 10 ~ "6–10 participants",
+      TRUE ~ "11+ participants"
+    ),
+    clinic_size_group_3 = factor(
+      clinic_size_group_3,
+      levels = c(
+        "No clinic",
+        "1–5 participants",
+        "6–10 participants",
+        "11+ participants"
+      )
+    )
+  )
+
+model_categories_3 <- glm.nb(
+  tennis_bookings ~ clinic_size_group_3 + weekday + month + year,
+  data = tennis_analysis
+)
+
+summary(model_categories_3)
+
+exp(cbind(
+  rate_ratio = coef(model_categories_3),
+  confint(model_categories_3)
+))
+```
+
+```{r}
+library(tibble)
+library(kableExtra)
+
+dataset_preview <- tibble(
+  Date = c(
+    "2023-06-07", "2023-07-22",
+    "2024-06-15", "2024-07-27",
+    "2025-06-10", "2025-08-02",
+    "2026-06-13", "2026-07-18"
+  ),
+  
+  Year = c(
+    2023, 2023,
+    2024, 2024,
+    2025, 2025,
+    2026, 2026
+  ),
+  
+  Weekday = c(
+    "Wednesday", "Saturday",
+    "Saturday", "Saturday",
+    "Tuesday", "Saturday",
+    "Saturday", "Saturday"
+  ),
+  
+  Month = c(
+    "June", "July",
+    "June", "July",
+    "June", "August",
+    "June", "July"
+  ),
+  
+  `Member bookings` = c(
+    7, 15,
+    11, 17,
+    8, 16,
+    10, 14
+  ),
+  
+  `Inn-guest bookings` = c(
+    2, 7,
+    4, 8,
+    3, 6,
+    4, 7
+  ),
+  
+  `Tennis bookings` = c(
+    9, 22,
+    15, 25,
+    11, 22,
+    14, 21
+  ),
+  
+  `Clinic participants` = c(
+    0, 8,
+    5, 11,
+    2, 7,
+    6, 12
+  ),
+  
+  `Clinic size` = c(
+    "No clinic", "6–10",
+    "1–5", "11+",
+    "1–5", "6–10",
+    "6–10", "11+"
+  )
+)
+
+dataset_preview |>
+  kbl(
+    format = "html",
+    caption = "Table 1. Illustrative Excerpt of the Daily Tennis Activity Dataset, 2023–2026",
+    align = c("c", "c", "l", "l", "c", "c", "c", "c", "l")
+  ) |>
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+    full_width = FALSE,
+    position = "center",
+    font_size = 12
+  ) |>
+  row_spec(
+    0,
+    bold = TRUE,
+    color = "white",
+    background = "#1F5A94"
+  ) |>
+  group_rows("2023", 1, 2, background = "#E8F1FA") |>
+  group_rows("2024", 3, 4, background = "#E8F1FA") |>
+  group_rows("2025", 5, 6, background = "#E8F1FA") |>
+  group_rows("2026", 7, 8, background = "#E8F1FA")
+```
+
+```{r}
+dataset_summary <- tennis_analysis |>
+  summarise(
+    total_observations = n(),
+    
+    first_date = min(date, na.rm = TRUE),
+    last_date = max(date, na.rm = TRUE),
+    
+    years_included = n_distinct(year),
+    
+    total_tennis_bookings = sum(tennis_bookings, na.rm = TRUE),
+    average_daily_bookings = mean(tennis_bookings, na.rm = TRUE),
+    median_daily_bookings = median(tennis_bookings, na.rm = TRUE),
+    
+    total_clinic_participants = sum(tennis_clinics, na.rm = TRUE),
+    
+    clinic_days = sum(tennis_clinics > 0, na.rm = TRUE),
+    no_clinic_days = sum(tennis_clinics == 0, na.rm = TRUE),
+    percent_clinic_days = 100 * mean(tennis_clinics > 0, na.rm = TRUE),
+    
+    average_clinic_size = mean(
+      tennis_clinics[tennis_clinics > 0],
+      na.rm = TRUE
+    ),
+    
+    median_clinic_size = median(
+      tennis_clinics[tennis_clinics > 0],
+      na.rm = TRUE
+    ),
+    
+    largest_clinic = max(tennis_clinics, na.rm = TRUE)
+  )
+
+dataset_summary
+```
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tibble)
+
+clinic_continuous_plot <- tibble(
+  clinic_participants = 0:15,
+  booking_rate_ratio = exp(0.04504 * (0:15))
+)
+
+ggplot(
+  clinic_continuous_plot,
+  aes(x = clinic_participants, y = booking_rate_ratio)
+) +
+  geom_hline(
+    yintercept = 1,
+    linetype = "dashed",
+    color = "gray45",
+    linewidth = 0.8
+  ) +
+  geom_line(
+    color = "#1F5A94",
+    linewidth = 1.2
+  ) +
+  geom_point(
+    color = "#1F5A94",
+    size = 2.6
+  ) +
+  labs(
+    title = "Expected Booking Rate by Tennis Clinic Size",
+    subtitle = "Adjusted rate ratios relative to a day with no clinic participation",
+    x = "Tennis clinic participants",
+    y = "Expected booking rate ratio"
+  ) +
+  scale_y_continuous(
+    breaks = seq(1, 2.1, by = 0.2)
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r}
+clinic_results_table <- tibble(
+  `Clinic size` = c(
+    "No clinic",
+    "1–5 participants",
+    "6–10 participants",
+    "11+ participants"
+  ),
+  
+  `Rate ratio` = c(
+    "1.00",
+    "1.21",
+    "1.65",
+    "1.58"
+  ),
+  
+  `95% confidence interval` = c(
+    "Reference",
+    "0.92–1.60",
+    "1.24–2.21",
+    "1.03–2.47"
+  ),
+  
+  `P-value` = c(
+    "—",
+    "0.164",
+    "< 0.001",
+    "0.031"
+  ),
+  
+  Interpretation = c(
+    "Reference group",
+    "No clear difference from no-clinic days",
+    "65% higher expected booking rate",
+    "58% higher expected booking rate"
+  )
+)
+
+clinic_results_table |>
+  kbl(
+    format = "html",
+    caption = "Table 3. Adjusted Association Between Clinic Size and Daily Tennis Bookings",
+    align = c("l", "c", "c", "c", "l")
+  ) |>
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+    full_width = FALSE,
+    position = "center",
+    font_size = 12
+  ) |>
+  row_spec(
+    0,
+    bold = TRUE,
+    color = "white",
+    background = "#1F5A94"
+  ) |>
+  row_spec(
+    3:4,
+    background = "#E8F1FA"
+  ) |>
+  column_spec(1, width = "3.2cm") |>
+  column_spec(2, width = "2.0cm") |>
+  column_spec(3, width = "3.5cm") |>
+  column_spec(4, width = "2.0cm") |>
+  column_spec(5, width = "5.7cm")
+```
+
+```{r}
+clinic_category_plot <- tibble(
+  clinic_size = factor(
+    c("1–5 participants", "6–10 participants", "11+ participants"),
+    levels = c(
+      "1–5 participants",
+      "6–10 participants",
+      "11+ participants"
+    )
+  ),
+  
+  rate_ratio = c(
+    1.2131,
+    1.6524,
+    1.5823
+  ),
+  
+  lower_ci = c(
+    0.9234,
+    1.2358,
+    1.0328
+  ),
+  
+  upper_ci = c(
+    1.6020,
+    2.2149,
+    2.4703
+  )
+)
+
+ggplot(
+  clinic_category_plot,
+  aes(x = clinic_size, y = rate_ratio)
+) +
+  geom_hline(
+    yintercept = 1,
+    linetype = "dashed",
+    color = "gray45",
+    linewidth = 0.8
+  ) +
+  geom_errorbar(
+    aes(ymin = lower_ci, ymax = upper_ci),
+    width = 0.12,
+    linewidth = 0.9,
+    color = "#1F5A94"
+  ) +
+  geom_point(
+    size = 4.5,
+    color = "#1F5A94"
+  ) +
+  geom_text(
+    aes(label = paste0(round(rate_ratio, 2), "x")),
+    vjust = -1,
+    size = 4.2
+  ) +
+  labs(
+    title = "Adjusted Association Between Clinic Size and Court Bookings",
+    subtitle = "Rate ratios relative to days with no tennis clinic",
+    x = "Tennis clinic size",
+    y = "Adjusted booking rate ratio"
+  ) +
+  coord_cartesian(ylim = c(0.5, 2.75)) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r}
+calendar_results_table <- tibble(
+  Comparison = c(
+    "Saturday vs. Monday",
+    "Sunday vs. Monday",
+    "July vs. June",
+    "August vs. June",
+    "2024 vs. 2023",
+    "2025 vs. 2023",
+    "2026 vs. 2023"
+  ),
+  
+  `Rate ratio` = c(
+    "1.70",
+    "1.41",
+    "1.84",
+    "1.08",
+    "1.38",
+    "1.03",
+    "0.78"
+  ),
+  
+  `95% confidence interval` = c(
+    "1.20–2.42",
+    "0.97–2.04",
+    "1.46–2.31",
+    "0.85–1.37",
+    "1.06–1.78",
+    "0.79–1.35",
+    "0.58–1.06"
+  ),
+  
+  `P-value` = c(
+    "0.003",
+    "0.067",
+    "< 0.001",
+    "0.533",
+    "0.015",
+    "0.818",
+    "0.109"
+  ),
+  
+  Interpretation = c(
+    "About 70% higher expected bookings",
+    "Higher estimate, but not conclusive",
+    "About 84% higher expected bookings",
+    "No clear difference",
+    "About 38% higher expected bookings",
+    "No clear difference",
+    "Lower estimate, but not conclusive"
+  )
+)
+
+calendar_results_table |>
+  kbl(
+    format = "html",
+    caption = "Table 4. Selected Calendar Associations With Daily Tennis Bookings",
+    align = c("l", "c", "c", "c", "l")
+  ) |>
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+    full_width = FALSE,
+    position = "center",
+    font_size = 12
+  ) |>
+  row_spec(
+    0,
+    bold = TRUE,
+    color = "white",
+    background = "#1F5A94"
+  ) |>
+  column_spec(1, width = "3.5cm") |>
+  column_spec(2, width = "2.0cm") |>
+  column_spec(3, width = "3.5cm") |>
+  column_spec(4, width = "2.0cm") |>
+  column_spec(5, width = "5.0cm")
+```
+
+```{r}
+model_fit <- tennis_analysis |>
+  mutate(
+    predicted_bookings = predict(
+      model_main,
+      type = "response"
+    ),
+    
+    prediction_error = tennis_bookings - predicted_bookings,
+    
+    absolute_error = abs(prediction_error),
+    
+    squared_error = prediction_error^2
+  )
+
+fit_metrics <- model_fit |>
+  summarise(
+    observations = n(),
+    
+    mean_actual_bookings = mean(tennis_bookings),
+    mean_predicted_bookings = mean(predicted_bookings),
+    
+    mae = mean(absolute_error),
+    
+    rmse = sqrt(mean(squared_error)),
+    
+    correlation_actual_predicted = cor(
+      tennis_bookings,
+      predicted_bookings
+    ),
+    
+    percent_within_3_bookings = 100 * mean(
+      absolute_error <= 3
+    ),
+    
+    percent_within_5_bookings = 100 * mean(
+      absolute_error <= 5
+    )
+  )
+
+fit_metrics
+```
+
+```{r}
+ggplot(
+  model_fit,
+  aes(x = predicted_bookings, y = tennis_bookings)
+) +
+  geom_abline(
+    slope = 1,
+    intercept = 0,
+    linetype = "dashed",
+    color = "gray40",
+    linewidth = 0.9
+  ) +
+  geom_point(
+    color = "#1F5A94",
+    alpha = 0.65,
+    size = 2.3
+  ) +
+  geom_smooth(
+    method = "lm",
+    se = TRUE,
+    color = "#D55E00",
+    linewidth = 0.9
+  ) +
+  labs(
+    title = "Observed and Predicted Daily Tennis Bookings",
+    subtitle = "Predictions from the continuous negative-binomial model",
+    x = "Predicted bookings",
+    y = "Observed bookings"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r}
+model_fit <- model_fit |>
+  mutate(
+    pearson_residual = residuals(
+      model_main,
+      type = "pearson"
+    )
+  )
+
+ggplot(
+  model_fit,
+  aes(x = predicted_bookings, y = pearson_residual)
+) +
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed",
+    color = "gray40"
+  ) +
+  geom_hline(
+    yintercept = c(-2, 2),
+    linetype = "dotted",
+    color = "#D55E00"
+  ) +
+  geom_point(
+    color = "#1F5A94",
+    alpha = 0.65,
+    size = 2.2
+  ) +
+  labs(
+    title = "Pearson Residuals for the Daily Booking Model",
+    subtitle = "Dotted lines mark residuals of −2 and 2",
+    x = "Predicted bookings",
+    y = "Pearson residual"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
